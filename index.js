@@ -4,6 +4,7 @@ const cors = require('cors');
 const app = express();
 
 // --- Configuración de Middlewares ---
+// Esto permite que el frontend de tu amigo se conecte sin errores de bloqueo
 app.use(cors());
 app.use(express.json());
 
@@ -19,9 +20,9 @@ const pool = mysql.createPool({
   queueLimit: 0
 });
 
-// Mensaje de bienvenida
+// Mensaje de bienvenida (Prueba de vida)
 app.get('/', (req, res) => {
-  res.send('🚀 API de MediGestion funcionando correctamente');
+  res.send('🚀 API de MediGestion funcionando correctamente en Railway');
 });
 
 // --- 2. Endpoint para obtener todas las citas (GET) ---
@@ -47,13 +48,12 @@ app.delete('/api/citas/:id', async (req, res) => {
   }
 });
 
-// --- 4. NUEVO: Endpoint para editar cita (PUT) ---
+// --- 4. Endpoint para editar cita (PUT) ---
 app.put('/api/citas/:id', async (req, res) => {
   const { id } = req.params;
   const { paciente, fecha, hora, motivo } = req.body;
 
   try {
-    // IMPORTANTE: Asegúrate que los nombres de las columnas coincidan con tu DB
     const query = `
       UPDATE citas 
       SET paciente = ?, fecha = ?, hora = ?, motivo = ? 
@@ -73,8 +73,7 @@ app.put('/api/citas/:id', async (req, res) => {
   }
 });
 
-// --- Configuración del Puerto ---
+// --- Configuración del Puerto (CORREGIDO PARA RAILWAY) ---
+// 1. Usamos process.env.PORT que asigna Railway
+// 2. Escuchamos en '0.0.0.0' para que sea accesible desde internet
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`✅ Servidor API listo en http://localhost:${PORT}`);
-});
