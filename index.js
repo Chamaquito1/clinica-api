@@ -3,12 +3,11 @@ const mysql = require('mysql2/promise');
 const cors = require('cors');
 const app = express();
 
-// Configuración de Middlewares
+// --- Configuración de Middlewares ---
 app.use(cors());
 app.use(express.json());
 
-// 1. Configuración de la Conexión (Preparada para Railway)
-// Estas variables (process.env) las llena Railway automáticamente al desplegar
+// --- 1. Configuración de la Conexión (Preparada para Railway) ---
 const pool = mysql.createPool({
   host: process.env.MYSQLHOST || 'localhost',
   user: process.env.MYSQLUSER || 'root',
@@ -20,12 +19,12 @@ const pool = mysql.createPool({
   queueLimit: 0
 });
 
-// Mensaje de bienvenida (para probar en el navegador)
+// Mensaje de bienvenida
 app.get('/', (req, res) => {
   res.send('🚀 API de MediGestion funcionando correctamente');
 });
 
-// 2. Endpoint para obtener todas las citas (GET)
+// --- 2. Endpoint para obtener todas las citas (GET) ---
 app.get('/api/citas', async (req, res) => {
   try {
     const [rows] = await pool.query('SELECT * FROM citas');
@@ -36,12 +35,10 @@ app.get('/api/citas', async (req, res) => {
   }
 });
 
-// 3. PASO 1 DEL DOCUMENTO: Endpoint para eliminar cita (DELETE)
-// DELETE /api/citas/:id - Eliminar una cita por su ID
+// --- 3. Endpoint para eliminar cita (DELETE) ---
 app.delete('/api/citas/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    // Ejecuta la query en la base de datos de Railway
     await pool.query('DELETE FROM citas WHERE id = ?', [id]);
     res.json({ mensaje: 'Cita eliminada correctamente' });
   } catch (error) {
@@ -50,7 +47,33 @@ app.delete('/api/citas/:id', async (req, res) => {
   }
 });
 
-// Configuración del Puerto
+// --- 4. NUEVO: Endpoint para editar cita (PUT) ---
+app.put('/api/citas/:id', async (req, res) => {
+  const { id } = req.params;
+  const { paciente, fecha, hora, motivo } = req.body;
+
+  try {
+    // IMPORTANTE: Asegúrate que los nombres de las columnas coincidan con tu DB
+    const query = `
+      UPDATE citas 
+      SET paciente = ?, fecha = ?, hora = ?, motivo = ? 
+      WHERE id = ?
+    `;
+    
+    const [result] = await pool.query(query, [paciente, fecha, hora, motivo, id]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Cita no encontrada' });
+    }
+
+    res.json({ mensaje: 'Cita actualizada correctamente' });
+  } catch (error) {
+    console.error('Error al editar cita:', error);
+    res.status(500).json({ error: 'Error al actualizar la cita' });
+  }
+});
+
+// --- Configuración del Puerto ---
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`✅ Servidor API listo en http://localhost:${PORT}`);
